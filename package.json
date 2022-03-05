@@ -1,0 +1,18 @@
+{
+  "name": "aa_stats",
+  "version": "1.0.0",
+  "description": "AA Statistics API",
+  "main": "aa_stats.js",
+  "scripts": {
+    "start": "node aa_stats.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "kakysha",
+  "license": "MIT",
+  "dependencies": {
+    "headless-obyte": "git+https://github.com/byteball/headless-obyte.git"
+  },
+  "resolutions": {
+    "ocore": "git+https://github.com/kakysha/ocore.git#upgrade-nwjs"
+  }
+}
