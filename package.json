@@ -11,7 +11,6 @@
   "license": "MIT",
   "dependencies": {
     "headless-obyte": "git+https://github.com/byteball/headless-obyte.git",
-    "ocore": "git+https://github.com/kakysha/ocore.git#upgrade-nwjs",
     "koa": "^2.7.0",
     "koa-router": "^7.4.0",
     "koa-mount": "^4.0.0",
@@ -19,6 +18,5 @@
     "koa-bodyparser": "^4.2.1"
   },
   "resolutions": {
-    "ocore": "git+https://github.com/kakysha/ocore.git#upgrade-nwjs"
   }
 }
