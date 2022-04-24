@@ -36,6 +36,7 @@ async function start() {
 // timeframe is in minutes
 async function aggregatePeriod(timeframe) {
 	let lastResponseId = await getFromKV(`${kv_key}${timeframe}`) || 0;
+	console.log(`aggregatePeriod ${timeframe} last reponse id ${lastResponseId}`);
 	const rows = await db.query(`SELECT
 			MAX(aa_response_id) AS last_response_id,
 			units.timestamp / 60 / ? AS period,
