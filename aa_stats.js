@@ -28,6 +28,7 @@ process.on('unhandledRejection', up => {
 });
 
 let assetsMetadata = {};
+let aggregationInProgress = {};
 
 async function start() {
 	console.log('Starting aa_stats daemon');
@@ -43,6 +44,8 @@ async function start() {
 
 // timeframe is in minutes
 async function aggregatePeriod(timeframe) {
+	if (aggregationInProgress[timeframe]) return;
+	aggregationInProgress[timeframe] = true;
 	let lastResponseId = await getFromKV(`${kv_key}${timeframe}`) || 0;
 	console.log(`aggregatePeriod ${timeframe} last reponse id ${lastResponseId}`);
 
@@ -162,6 +165,8 @@ async function aggregatePeriod(timeframe) {
 		lastResponseId = Math.max(lastResponseId, row.last_response_id);
 		periodRows.push(row);
 	}
+
+	aggregationInProgress[timeframe] = false;
 }
 
 async function snapshotBalances() {
