@@ -84,21 +84,21 @@ async function aggregatePeriod(timeframe) {
 
 	// now merge two results
 
-	let rows = {};
+	let rowsMap = {};
 	const _key = row => '' + row.period + row.aa_address + row.asset;
 	for (let row of inputRows) {
-		rows[_key(row)] = row;
+		rowsMap[_key(row)] = row;
 	}
 	for (let row of outputRows) {
-		cRow = rows[_key(row)];
-		if (cRow == null) {
-			rows[_key(row)] = row;
+		let iRow = rowsMap[_key(row)];
+		if (iRow == null) {
+			rowsMap[_key(row)] = row;
 			continue;
 		}
-		cRow.last_response_id = Math.max(cRow.last_response_id, row.last_response_id);
-		cRow.amount_out = row.amount_out;	
+		iRow.last_response_id = Math.max(iRow.last_response_id, row.last_response_id);
+		iRow.amount_out = row.amount_out;	
 	}
-	rows = Object.values(rows).sort((a,b) => (a.last_response_id > b.last_response_id) ? 1 : ((b.last_response_id > a.last_response_id) ? -1 : 0));
+	let rows = Object.values(rowsMap).sort((a,b) => (a.last_response_id > b.last_response_id) ? 1 : ((b.last_response_id > a.last_response_id) ? -1 : 0));
 	
 	// request missing asset infos
 
@@ -430,7 +430,7 @@ apiRouter.post('/top/asset/amount_in', async ctx => {
 app.use(mount('/api/v1', apiRouter.routes()));
 
 async function createTableIfNotExists() {
-	await db.query(`DROP TABLE IF EXISTS aa_stats_hourly`);
+	/*await db.query(`DROP TABLE IF EXISTS aa_stats_hourly`);
 	await db.query(`DROP TABLE IF EXISTS aa_stats_daily`);
 	await db.query(`DROP TABLE IF EXISTS aa_balances_hourly`);
 	await storeIntoKV(`${kv_key}60`, 0);
