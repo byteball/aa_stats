@@ -20,6 +20,13 @@ app.use(cors());
 app.use(bodyParser());
 const apiRouter = new KoaRouter();
 
+
+process.on('unhandledRejection', up => {
+	console.error('unhandledRejection event', up);
+	setTimeout(() => {throw up}, 100);
+//	throw up;
+});
+
 let assetsMetadata = {};
 
 async function start() {
