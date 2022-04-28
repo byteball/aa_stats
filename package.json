@@ -10,11 +10,12 @@
   "author": "kakysha",
   "license": "MIT",
   "dependencies": {
+    "@koa/cors": "^3.1.0",
+    "cron": "^1.8.2",
     "headless-obyte": "git+https://github.com/byteball/headless-obyte.git",
     "koa": "^2.7.0",
-    "koa-router": "^7.4.0",
+    "koa-bodyparser": "^4.2.1",
     "koa-mount": "^4.0.0",
-    "@koa/cors": "^3.1.0",
-    "koa-bodyparser": "^4.2.1"
+    "koa-router": "^7.4.0"
   }
 }

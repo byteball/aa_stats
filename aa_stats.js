@@ -4,6 +4,7 @@ const rates = require('ocore/network.js').exchangeRates;
 const kvstore = require('ocore/kvstore.js');
 const headlessWallet = require('headless-obyte');
 const wallet = require('ocore/wallet.js');
+const CronJob = require('cron').CronJob;
 
 const kv_hourly_key = 'aa_stats_last_response_id_hourly';
 const kv_key = 'aa_stats_last_response_id_';
@@ -29,7 +30,7 @@ async function start() {
 	await aggregatePeriod(60 * 24);
 	setInterval(() => {aggregatePeriod(60 * 24)}, 1000 * 60 * 10 + 30 * 1000); // offset by 30 seconds to not interfier with hourly queries
 	await snapshotBalances();
-	setInterval(snapshotBalances, 1000 * 60 * 10 + 20 * 1000); // offset by 20 seconds to not interfier with hourly queries
+	(new CronJob('1 * * * * *', snapshotBalances)).start();
 	app.listen(8080, () => {console.log('Web server started on port 8080')});
 }
 
@@ -37,12 +38,16 @@ async function start() {
 async function aggregatePeriod(timeframe) {
 	let lastResponseId = await getFromKV(`${kv_key}${timeframe}`) || 0;
 	console.log(`aggregatePeriod ${timeframe} last reponse id ${lastResponseId}`);
-	const rows = await db.query(`SELECT
+
+	// we use two distinct queries as they have different join conditions
+	
+	const inputRows = await db.query(`SELECT
 			MAX(aa_response_id) AS last_response_id,
 			units.timestamp / 60 / ? AS period,
 			aa_address,
 			total_inputs.asset,
 			SUM(total_inputs.amount) AS amount_in,
+			0 AS amount_out,
 			COUNT(1) AS triggers_count,
 			SUM(bounced) AS bounced_count,
 			COUNT(DISTINCT trigger_address) AS num_users
@@ -52,9 +57,43 @@ async function aggregatePeriod(timeframe) {
 		WHERE aa_response_id > ?
 		GROUP BY units.timestamp / 60 / ?, aa_address, total_inputs.asset
 		ORDER BY aa_response_id ASC`, [timeframe, lastResponseId, timeframe]);
+
+	const outputRows = await db.query(`SELECT
+			MAX(aa_response_id) AS last_response_id,
+			units.timestamp / 60 / ? AS period,
+			aa_address,
+			total_outputs.asset,
+			0 AS amount_in,
+			SUM(total_outputs.amount) AS amount_out,
+			COUNT(1) AS triggers_count,
+			SUM(bounced) AS bounced_count,
+			COUNT(DISTINCT trigger_address) AS num_users
+		FROM aa_responses
+		JOIN units ON aa_responses.trigger_unit=units.unit
+		JOIN outputs AS total_outputs ON total_outputs.unit=aa_responses.response_unit
+		WHERE aa_response_id > ?
+		GROUP BY units.timestamp / 60 / ?, aa_address, total_outputs.asset
+		ORDER BY aa_response_id ASC`, [timeframe, lastResponseId, timeframe]);
+
+	// now merge two results
+
+	let rows = {};
+	const _key = row => '' + row.period + row.aa_address + row.asset;
+	for (let row of inputRows) {
+		rows[_key(row)] = row;
+	}
+	for (let row of outputRows) {
+		cRow = rows[_key(row)];
+		if (cRow == null) {
+			rows[_key(row)] = row;
+			continue;
+		}
+		cRow.last_response_id = Math.max(cRow.last_response_id, row.last_response_id);
+		cRow.amount_out = row.amount_out;	
+	}
+	rows = Object.values(rows).sort((a,b) => (a.last_response_id > b.last_response_id) ? 1 : ((b.last_response_id > a.last_response_id) ? -1 : 0));
 	
-	let lastPeriod = 0;
-	let periodRows = [];
+	// request missing asset infos
 
 	let assets = [...new Set(rows.map(r => r.asset))].filter(a => !assetsMetadata.hasOwnProperty(a) && a != null);
 	const aMs = await new Promise((resolve, reject) => {
@@ -67,21 +106,18 @@ async function aggregatePeriod(timeframe) {
 	});
 	Object.assign(assetsMetadata, aMs);
 
+	// aggregate
+
+	let lastPeriod = 0;
+	let periodRows = [];
+
 	for (const row of rows) {
 		if (lastPeriod > 0 && row.period > lastPeriod) { // close this timeframe
 			const conn = await db.takeConnectionFromPool();
 			await conn.query(`BEGIN`);
 			for (const row of periodRows) {
-				const amount_out_rows = await conn.query(`
-					SELECT
-						IFNULL(SUM(amount), 0) AS amount_out
-					FROM aa_responses
-					JOIN units ON aa_responses.trigger_unit=units.unit
-					JOIN  outputs AS total_outputs ON aa_responses.response_unit=total_outputs.unit
-					WHERE units.timestamp / 60 / ? = ? AND aa_address=? AND total_outputs.asset IS ?
-				`, [timeframe, lastPeriod, row.aa_address, row.asset]);
 				const usd_amount_in = getUSDAmount(row.asset, row.amount_in);
-				const usd_amount_out = getUSDAmount(row.asset, amount_out_rows[0].amount_out);
+				const usd_amount_out = getUSDAmount(row.asset, row.amount_out);
 				const tableName = `aa_stats_${timeframe === 60 ? 'hourly' : 'daily'}`;
 				const periodColumnName = timeframe === 60 ? 'hour' : 'day';
 				await conn.query(`
@@ -101,7 +137,7 @@ async function aggregatePeriod(timeframe) {
 						row.aa_address,
 						row.asset,
 						row.amount_in,
-						amount_out_rows[0].amount_out,
+						row.amount_out,
 						usd_amount_in,
 						usd_amount_out,
 						row.triggers_count,
@@ -387,7 +423,7 @@ apiRouter.post('/top/asset/amount_in', async ctx => {
 app.use(mount('/api/v1', apiRouter.routes()));
 
 async function createTableIfNotExists() {
-	/*await db.query(`DROP TABLE IF EXISTS aa_stats_hourly`);
+	await db.query(`DROP TABLE IF EXISTS aa_stats_hourly`);
 	await db.query(`DROP TABLE IF EXISTS aa_stats_daily`);
 	await db.query(`DROP TABLE IF EXISTS aa_balances_hourly`);
 	await storeIntoKV(`${kv_key}60`, 0);
