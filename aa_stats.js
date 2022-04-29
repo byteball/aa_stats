@@ -66,7 +66,7 @@ async function aggregatePeriod(timeframe) {
 		JOIN outputs AS total_inputs ON total_inputs.unit=aa_responses.trigger_unit AND total_inputs.address=aa_address
 		WHERE aa_response_id > ?
 		GROUP BY units.timestamp / 60 / ?, aa_address, total_inputs.asset
-		ORDER BY aa_response_id ASC`, [timeframe, lastResponseId, timeframe]);
+		ORDER BY period ASC`, [timeframe, lastResponseId, timeframe]);
 
 	const outputRows = await db.query(`SELECT
 			MAX(aa_response_id) AS last_response_id,
@@ -83,7 +83,7 @@ async function aggregatePeriod(timeframe) {
 		JOIN outputs AS total_outputs ON total_outputs.unit=aa_responses.response_unit
 		WHERE aa_response_id > ?
 		GROUP BY units.timestamp / 60 / ?, aa_address, total_outputs.asset
-		ORDER BY aa_response_id ASC`, [timeframe, lastResponseId, timeframe]);
+		ORDER BY period ASC`, [timeframe, lastResponseId, timeframe]);
 
 	// now merge two results
 
