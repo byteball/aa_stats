@@ -101,7 +101,7 @@ async function aggregatePeriod(timeframe) {
 		iRow.last_response_id = Math.max(iRow.last_response_id, row.last_response_id);
 		iRow.amount_out = row.amount_out;	
 	}
-	let rows = Object.values(rowsMap).sort((a,b) => (a.last_response_id > b.last_response_id) ? 1 : ((b.last_response_id > a.last_response_id) ? -1 : 0));
+	let rows = Object.values(rowsMap).sort((a,b) => (a.period > b.period) ? 1 : ((b.period > a.period) ? -1 : 0));
 	
 	// request missing asset infos
 
