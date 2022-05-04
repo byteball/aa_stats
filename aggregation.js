@@ -162,7 +162,7 @@ async function snapshotBalances() {
 	const rows = await conn.query(`SELECT address, asset, balance FROM aa_balances`);
 	for (const row of rows) {
 		row.asset = row.asset === "base" ? null : row.asset;
-		if (!row.asset) {
+		if (row.asset) {
 			const { cap, definer_address } = await storage.readAssetInfo(conn, row.asset);
 			if (!cap && definer_address === row.address) // skip balances in assets this same AA has defined
 				continue;
