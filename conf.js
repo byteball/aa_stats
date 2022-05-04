@@ -27,5 +27,6 @@ exports.KEYS_FILENAME = 'keys.json';
 // set true to append logs to logfile instead of overwriting it. Default is to overwrite
 // exports.appendLogfile = true;
 
+exports.webserverPort = 8080;
 
 console.log('finished headless conf');

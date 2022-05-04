@@ -4,6 +4,7 @@ const cors = require('@koa/cors');
 const bodyParser = require('koa-bodyparser');
 const mount = require('koa-mount');
 
+const conf = require('ocore/conf.js');
 const db = require('ocore/db.js');
 const { getAssetID, getAssetName } = require('./assets');
 
@@ -218,7 +219,7 @@ app.use(mount('/api/v1', apiRouter.routes()));
 
 
 async function start() {
-	app.listen(8080, () => {console.log('Web server started on port 8080')});
+	app.listen(conf.webserverPort, () => console.log('Web server started on port ' + conf.webserverPort));
 }
 
 exports.start = start;
