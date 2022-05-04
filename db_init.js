@@ -14,8 +14,8 @@ async function createTables() {
 		asset CHAR(44) NULL,
 		amount_in INT NOT NULL DEFAULT 0,
 		amount_out INT NOT NULL DEFAULT 0,
-		usd_amount_in INT NULL,
-		usd_amount_out INT NULL,
+		usd_amount_in DOUBLE NULL,
+		usd_amount_out DOUBLE NULL,
 		triggers_count INT NOT NULL DEFAULT 0,
 		bounced_count INT NOT NULL DEFAULT 0,
 		num_users INT NOT NULL DEFAULT 0
@@ -44,7 +44,7 @@ async function createTables() {
 			address CHAR(32) NOT NULL,
 			asset CHAR(44) NULL,
 			balance INT NOT NULL DEFAULT 0,
-			usd_balance INT NULL,
+			usd_balance DOUBLE NULL,
 			UNIQUE (hour, address, asset)
 		)`
 	);

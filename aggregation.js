@@ -172,15 +172,15 @@ function getUSDAmount(asset, amount) {
 	let rate;
 	if (asset) {
 		if (rates[`${asset}_USD`]) {
-			rate = rates[`${asset}_USD`] * 100;
+			rate = rates[`${asset}_USD`];
 			if (assetsMetadata[asset] && assetsMetadata[asset].decimals > 0)
 				rate /= Math.pow(10, assetsMetadata[asset].decimals);
 		}
 	} else if (rates['GBYTE_USD']) { // for bytes it should be cents per byte
-		rate = rates['GBYTE_USD'] * 100 / 1e9;
+		rate = rates['GBYTE_USD'] / 1e9;
 	}
 	if (rate)
-		return Math.round(amount * rate);
+		return +(amount * rate).toFixed(2);
 	return null;
 }
 
