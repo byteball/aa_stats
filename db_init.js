@@ -25,7 +25,8 @@ async function createTables() {
 			hour INT NOT NULL,
 			${columns},
 			UNIQUE (hour, aa_address, asset)
-	)`);
+		)`
+	);
 	await db.query(`CREATE INDEX IF NOT EXISTS aaStatsByHour ON aa_stats_hourly(hour)`);
 
 	await db.query(`
@@ -33,7 +34,8 @@ async function createTables() {
 			day INT NOT NULL,
 			${columns},
 			UNIQUE (day, aa_address, asset)
-	)`);
+		)`
+	);
 	await db.query(`CREATE INDEX IF NOT EXISTS aaStatsByDay ON aa_stats_daily(day)`);
 
 	await db.query(`
@@ -44,7 +46,8 @@ async function createTables() {
 			balance INT NOT NULL DEFAULT 0,
 			usd_balance INT NULL,
 			UNIQUE (hour, address, asset)
-	)`);
+		)`
+	);
 	await db.query(`CREATE INDEX IF NOT EXISTS aaBalancesByHour ON aa_balances_hourly(hour)`);
 }
 
