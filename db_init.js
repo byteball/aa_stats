@@ -2,7 +2,7 @@ const db = require('ocore/db.js');
 
 async function createTables() {
 	/*
-	const { storeIntoKV } = require('./kv');
+	const { storeIntoKV, kv_key } = require('./kv');
 	await db.query(`DROP TABLE IF EXISTS aa_stats_hourly`);
 	await db.query(`DROP TABLE IF EXISTS aa_stats_daily`);
 	await db.query(`DROP TABLE IF EXISTS aa_balances_hourly`);

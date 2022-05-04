@@ -4,10 +4,7 @@ const rates = require('ocore/network.js').exchangeRates;
 const wallet = require('ocore/wallet.js');
 const CronJob = require('cron').CronJob;
 const { assetsMetadata } = require('./assets');
-const { getFromKV, storeIntoKV } = require('./kv');
-
-const kv_hourly_key = 'aa_stats_last_response_id_hourly';
-const kv_key = 'aa_stats_last_response_id_';
+const { getFromKV, storeIntoKV, kv_key } = require('./kv');
 
 
 let aggregationInProgress = {};
