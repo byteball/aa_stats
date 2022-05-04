@@ -1,4 +1,5 @@
 const db = require('ocore/db.js');
+const storage = require('ocore/storage.js');
 const rates = require('ocore/network.js').exchangeRates;
 const kvstore = require('ocore/kvstore.js');
 const wallet = require('ocore/wallet.js');
@@ -161,6 +162,11 @@ async function snapshotBalances() {
 	const rows = await conn.query(`SELECT address, asset, balance FROM aa_balances`);
 	for (const row of rows) {
 		row.asset = row.asset === "base" ? null : row.asset;
+		if (!row.asset) {
+			const { cap, definer_address } = await storage.readAssetInfo(conn, row.asset);
+			if (!cap && definer_address === row.address) // skip balances in assets this same AA has defined
+				continue;
+		}
 		row.usd_balance = getUSDAmount(row.asset, row.balance);
 		await conn.query(`INSERT INTO aa_balances_hourly (hour, date, address, asset, balance, usd_balance) VALUES (?, ${db.getFromUnixTime('?')}, ?, ?, ?, ?)`,
 			[currentHour, currentHour * 3600, row.address, row.asset, row.balance, row.usd_balance]);
@@ -178,7 +184,7 @@ function getUSDAmount(asset, amount) {
 			if (assetsMetadata[asset] && assetsMetadata[asset].decimals > 0)
 				rate /= Math.pow(10, assetsMetadata[asset].decimals);
 		}
-	} else if (rates['GBYTE_USD']) { // for bytes it should be cents per byte
+	} else if (rates['GBYTE_USD']) {
 		rate = rates['GBYTE_USD'] / 1e9;
 	}
 	if (rate)
