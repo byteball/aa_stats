@@ -113,7 +113,7 @@ apiRouter.post('/top/aa/tvl', async ctx => {
 	if (asset !== false) {
 		sql += ` AND asset IS ?`;
 	}
-	sql += ` ORDER BY usd_balance DESC, balance DESC`;
+	sql += ` ORDER BY usd_balance DESC`;
 	const rows = await db.query(sql, [hour, ...(asset !== false ? [asset] : [])]);
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
@@ -182,7 +182,7 @@ apiRouter.post('/top/asset/market_cap', async ctx => {
 		FROM aa_balances_hourly
 		WHERE period=?
 		GROUP BY asset
-		ORDER BY total_balance DESC LIMIT ${limit}`;
+		ORDER BY total_usd_balance DESC LIMIT ${limit}`;
 	const rows = await db.query(sql, [hour]);
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
@@ -210,7 +210,7 @@ apiRouter.post('/top/asset/amount_in', async ctx => {
 		FROM aa_stats_hourly
 		WHERE period=?
 		GROUP BY asset
-		ORDER BY total_amount_in DESC LIMIT ${limit}`;
+		ORDER BY total_usd_amount_in DESC LIMIT ${limit}`;
 	const rows = await db.query(sql, [hour]);
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
