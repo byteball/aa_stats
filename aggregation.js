@@ -1,10 +1,10 @@
 const db = require('ocore/db.js');
 const storage = require('ocore/storage.js');
 const rates = require('ocore/network.js').exchangeRates;
-const kvstore = require('ocore/kvstore.js');
 const wallet = require('ocore/wallet.js');
 const CronJob = require('cron').CronJob;
 const { assetsMetadata } = require('./assets');
+const { getFromKV, storeIntoKV } = require('./kv');
 
 const kv_hourly_key = 'aa_stats_last_response_id_hourly';
 const kv_key = 'aa_stats_last_response_id_';
@@ -190,20 +190,6 @@ function getUSDAmount(asset, amount) {
 	if (rate)
 		return +(amount * rate).toFixed(2);
 	return null;
-}
-
-function getFromKV(key) {
-	return new Promise((resolve, reject) => {
-		kvstore.get(key, resolve);
-	});
-}
-function storeIntoKV(key, val) {
-	return new Promise((resolve, reject) => {
-		kvstore.put(key, val, (err) => {
-			if (err) reject(err);
-			else resolve();
-		});
-	});
 }
 
 exports.start = start;
