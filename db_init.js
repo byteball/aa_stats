@@ -10,6 +10,7 @@ async function createTables() {
 	await db.query(`CREATE INDEX IF NOT EXISTS byResponseUnit ON aa_responses(response_unit)`);
 
 	const columns = `
+		period_start_date TIMESTAMP NOT NULL,
 		aa_address CHAR(32) NOT NULL,
 		asset CHAR(44) NULL,
 		amount_in INT NOT NULL DEFAULT 0,
@@ -18,7 +19,8 @@ async function createTables() {
 		usd_amount_out DOUBLE NULL,
 		triggers_count INT NOT NULL DEFAULT 0,
 		bounced_count INT NOT NULL DEFAULT 0,
-		num_users INT NOT NULL DEFAULT 0
+		num_users INT NOT NULL DEFAULT 0,
+		creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 	`;
 	await db.query(`
 		CREATE TABLE IF NOT EXISTS aa_stats_hourly (
@@ -41,10 +43,12 @@ async function createTables() {
 	await db.query(`
 		CREATE TABLE IF NOT EXISTS aa_balances_hourly (
 			hour INT NOT NULL,
+			date TIMESTAMP NOT NULL,
 			address CHAR(32) NOT NULL,
 			asset CHAR(44) NULL,
 			balance INT NOT NULL DEFAULT 0,
 			usd_balance DOUBLE NULL,
+			creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE (hour, address, asset)
 		)`
 	);

@@ -112,6 +112,7 @@ async function aggregatePeriod(timeframe) {
 				await conn.query(`
 					INSERT INTO ${tableName} (
 						${periodColumnName},
+						period_start_date,
 						aa_address,
 						asset,
 						amount_in,
@@ -121,8 +122,9 @@ async function aggregatePeriod(timeframe) {
 						triggers_count,
 						bounced_count,
 						num_users
-					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+					) VALUES (?, ${db.getFromUnixTime('?')}, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
 						lastPeriod,
+						lastPeriod * 3600 * (timeframe === 60 ? 1 : 24),
 						row.aa_address,
 						row.asset,
 						row.amount_in,
@@ -160,8 +162,8 @@ async function snapshotBalances() {
 	for (const row of rows) {
 		row.asset = row.asset === "base" ? null : row.asset;
 		row.usd_balance = getUSDAmount(row.asset, row.balance);
-		await conn.query(`INSERT INTO aa_balances_hourly (hour, address, asset, balance, usd_balance) VALUES (?, ?, ?, ?, ?)`,
-			[currentHour, row.address, row.asset, row.balance, row.usd_balance]);
+		await conn.query(`INSERT INTO aa_balances_hourly (hour, date, address, asset, balance, usd_balance) VALUES (?, ${db.getFromUnixTime('?')}, ?, ?, ?, ?)`,
+			[currentHour, currentHour * 3600, row.address, row.asset, row.balance, row.usd_balance]);
 	}
 	await conn.query(`COMMIT`);
 	conn.release();
