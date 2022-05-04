@@ -1,6 +1,6 @@
 const eventBus = require('ocore/event_bus.js');
 const headlessWallet = require('headless-obyte');
-const { createTableIfNotExists } = require('./db_init');
+const { createTables } = require('./db_init');
 const webserver = require('./webserver');
 const aggregation = require('./aggregation');
 
@@ -15,7 +15,7 @@ process.on('unhandledRejection', up => {
 
 async function start() {
 	console.log('Starting aa_stats daemon');
-	await createTableIfNotExists();
+	await createTables();
 	await aggregation.start();
 	webserver.start();
 }

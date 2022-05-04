@@ -1,6 +1,6 @@
 const db = require('ocore/db.js');
 
-async function createTableIfNotExists() {
+async function createTables() {
 	/*await db.query(`DROP TABLE IF EXISTS aa_stats_hourly`);
 	await db.query(`DROP TABLE IF EXISTS aa_stats_daily`);
 	await db.query(`DROP TABLE IF EXISTS aa_balances_hourly`);
@@ -48,4 +48,4 @@ async function createTableIfNotExists() {
 	await db.query(`CREATE INDEX IF NOT EXISTS aaBalancesByHour ON aa_balances_hourly(hour)`);
 }
 
-exports.createTableIfNotExists = createTableIfNotExists;
+exports.createTables = createTables;
