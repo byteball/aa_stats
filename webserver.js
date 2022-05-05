@@ -52,7 +52,7 @@ apiRouter.post('/address', async ctx => {
 		sql += ` AND asset IS ?`;
 	}
 	sql += ` ORDER BY period ASC`;
-	const rows = await db.query(sql, [req.address, req.from, req.to, ...(asset !== false ? [asset] : [])]);
+	const rows = await db.query(sql, [req.address, +req.from, +req.to, ...(asset !== false ? [asset] : [])]);
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});
 });
 
@@ -84,7 +84,7 @@ apiRouter.post('/address/tvl', async ctx => {
 		sql += ` AND asset IS ?`;
 	}
 	sql += ` ORDER BY period ASC`;
-	const rows = await db.query(sql, [req.address, req.from, req.to, ...(asset !== false ? [asset] : [])]);
+	const rows = await db.query(sql, [req.address, +req.from, +req.to, ...(asset !== false ? [asset] : [])]);
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
 
@@ -156,7 +156,7 @@ apiRouter.post('/top/aa/:type', async ctx => {
 		sql += ` AND asset IS ?`;
 	}
 	sql += ` ORDER BY ${type} DESC LIMIT ${limit}`
-	const rows = await db.query(sql, [req.from, req.to, ...(asset !== false ? [asset] : [])]);
+	const rows = await db.query(sql, [+req.from, +req.to, ...(asset !== false ? [asset] : [])]);
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
 
@@ -172,7 +172,7 @@ curl --header "Content-Type: application/json" \
 */
 apiRouter.post('/top/asset/tvl', async ctx => {
 	let req = ctx.request.body;
-	const hour = "period" in req ? req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
+	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	const limit = req.limit|0 || 50;
 	let sql = `SELECT
 			hour AS period,
@@ -200,7 +200,7 @@ curl --header "Content-Type: application/json" \
 apiRouter.post('/top/asset/amount_in', async ctx => {
 	let type = ctx.params['type'];
 	let req = ctx.request.body;
-	const hour = "period" in req ? req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
+	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	const limit = req.limit|0 || 50;
 	let sql = `SELECT
 			hour AS period,
