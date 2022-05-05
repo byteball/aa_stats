@@ -202,13 +202,13 @@ apiRouter.post('/top/aa/:type', async ctx => {
 		ctx.throw(404, 'type is incorrect');
 	let req = ctx.request.body;
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
+	const period = timeframe === "daily" ? "day" : "hour";
 	const period_length = timeframe === "daily" ? 1000 * 3600 * 24 : 1000 * 3600;
-	const from = +req.from || Math.floor(Date.now() / period_length) - 1;
-	const to = +req.to || Math.floor(Date.now() / period_length) - 1;
+	const from = typeof req.from === 'number' ? req.from : Math.floor(Date.now() / period_length) - 1;
+	const to = typeof req.to === 'number' ? req.to : Math.floor(Date.now() / period_length) - 1;
 	const limit = req.limit|0 || 50;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	let sql = `SELECT
-		${timeframe == "hourly" ? "hour" : "day"} AS period,
 		address,
 		${asset !== false ? 'SUM(amount_in) AS amount_in,' : ''}
 		${asset !== false ? 'SUM(amount_out) AS amount_out,' : ''}
@@ -218,7 +218,7 @@ apiRouter.post('/top/aa/:type', async ctx => {
 		SUM(bounced_count) AS bounced_count,
 		SUM(num_users) AS num_users
 		FROM aa_stats_${timeframe}
-		WHERE period BETWEEN ? AND ?
+		WHERE ${period} BETWEEN ? AND ?
 		${asset !== false ? 'AND asset IS ?' : ''}
 		GROUP BY address ORDER BY ${type} DESC LIMIT ${limit}`
 	const rows = await db.query(sql, [from, to, ...(asset !== false ? [asset] : [])]);
