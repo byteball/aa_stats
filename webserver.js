@@ -22,7 +22,7 @@ req body: {
 	"address": "IFFGFP32MYAQZCBXNGCO3ARF3AM6VTNA",
 	"asset": null, // optional, null for bytes, if not preset - returns values for all assets individually
 	"timeframe": "hourly" // "hourly" or "daily"
-	"from": 448531, // either hour or day (depending on timeframe) in unix timestamp format
+	"from": 448531, // either hour or day (depending on timeframe) number since unix epoch
 	"to": 457593 // same
 }
 curl --header "Content-Type: application/json" \
@@ -60,7 +60,7 @@ apiRouter.post('/address', async ctx => {
 req body: {
 	"address": "IFFGFP32MYAQZCBXNGCO3ARF3AM6VTNA",
 	"asset": null, // optional, null for bytes, if not preset - returns values for all assets 
-	"from": 448531, // hour in unix timestamp format
+	"from": 448531, // hour number since unix epoch
 	"to": 457593 // same
 }
 curl --header "Content-Type: application/json" \
@@ -91,7 +91,7 @@ apiRouter.post('/address/tvl', async ctx => {
 /* POST /top/aa/tvl => Top AAs by TVL
 req body: {
 	"asset": null, // optional, null for bytes, if not preset - return top TVL in USD
-	"period": 448531 // hour in unix timestamp format, if omitted - returns last hour
+	"period": 448531 // hour number since unix epoch, if omitted - returns last hour
 }
 curl --header "Content-Type: application/json" \
   --request POST \
@@ -102,18 +102,23 @@ apiRouter.post('/top/aa/tvl', async ctx => {
 	let req = ctx.request.body;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	const hour = "period" in req ? req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
-	let sql = `SELECT
-		hour AS period,
-		address,
-		asset,
-		balance,
-		usd_balance
-		FROM aa_balances_hourly
-		WHERE period=?`;
-	if (asset !== false) {
-		sql += ` AND asset IS ?`;
-	}
-	sql += ` ORDER BY usd_balance DESC`;
+	let sql = (asset !== false)
+		? `SELECT
+			hour AS period,
+			address,
+			balance,
+			usd_balance
+			FROM aa_balances_hourly
+			WHERE period=? AND asset IS ?
+			ORDER BY usd_balance DESC`
+		: `SELECT
+			hour AS period,
+			address,
+			SUM(usd_balance) AS usd_balance
+			FROM aa_balances_hourly
+			WHERE period=?
+			GROUP BY address
+			ORDER BY usd_balance DESC`;
 	const rows = await db.query(sql, [hour, ...(asset !== false ? [asset] : [])]);
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
@@ -123,7 +128,7 @@ req body: {
 	"timeframe": "hourly", // or "daily"
 	"limit": "50", // top-N, default = 50
 	"asset": null, // required, null for bytes, otherwise asset id
-	"from": 448531 // hour in unix timestamp format, if omitted - returns last hour
+	"from": 448531 // hour or day number since unix epoch, if omitted - returns last hour
 	"to": 457689
 }
 curl --header "Content-Type: application/json" \
@@ -133,37 +138,39 @@ curl --header "Content-Type: application/json" \
 */
 apiRouter.post('/top/aa/:type', async ctx => {
 	let type = ctx.params['type'];
-	if (!["amount_in", "amount_out", "triggers_count", "num_users"].includes(type))
+	if (!["usd_amount_in", "usd_amount_out", "triggers_count", "num_users"].includes(type))
 		ctx.throw(404, 'type is incorrect');
 	let req = ctx.request.body;
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
+	const period_length = timeframe === "daily" ? 1000 * 3600 * 24 : 1000 * 3600;
+	const from = +req.from || Math.floor(Date.now() / period_length) - 1;
+	const to = +req.to || Math.floor(Date.now() / period_length) - 1;
 	const limit = req.limit|0 || 50;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	let sql = `SELECT
 		${timeframe == "hourly" ? "hour" : "day"} AS period,
 		aa_address AS address,
-		asset,
-		amount_in,
-		amount_out,
-		usd_amount_in,
-		usd_amount_out,
-		triggers_count,
-		bounced_count,
-		num_users
+		SUM(amount_in) AS amount_in,
+		SUM(amount_out) AS amount_out,
+		SUM(usd_amount_in) AS usd_amount_in,
+		SUM(usd_amount_out) AS usd_amount_out,
+		SUM(triggers_count) AS triggers_count,
+		SUM(bounced_count) AS bounced_count,
+		SUM(num_users) AS num_users
 		FROM aa_stats_${timeframe}
 		WHERE period BETWEEN ? AND ?`;
 	if (asset !== false) {
 		sql += ` AND asset IS ?`;
 	}
-	sql += ` ORDER BY ${type} DESC LIMIT ${limit}`
-	const rows = await db.query(sql, [+req.from, +req.to, ...(asset !== false ? [asset] : [])]);
+	sql += ` GROUP BY address ORDER BY ${type} DESC LIMIT ${limit}`
+	const rows = await db.query(sql, [from, to, ...(asset !== false ? [asset] : [])]);
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
 
-/* POST /top/asset/tvl => Top assets by market cap
+/* POST /top/asset/tvl => Top assets by TVL
 req body: {
 	"limit": "50", // top-N, default = 50
-	"period": 457673 // hour in unix timestamp format, if omitted - returns last hour
+	"period": 457673 // hour number since unix epoch, if omitted - returns last hour
 }
 curl --header "Content-Type: application/json" \
   --request POST \
@@ -190,7 +197,7 @@ apiRouter.post('/top/asset/tvl', async ctx => {
 /* POST /top/asset/volume => Top assets by volume (amount_in)
 req body: {
 	"limit": "50", // top-N, default = 50
-	"period": 457673 // hour in unix timestamp format, if omitted - returns last hour
+	"period": 457673 // hour number since unix epoch, if omitted - returns last hour
 }
 curl --header "Content-Type: application/json" \
   --request POST \
