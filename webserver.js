@@ -88,6 +88,66 @@ apiRouter.post('/address/tvl', async ctx => {
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
 
+/* POST /total/tvl => total TVL over time
+req body: {
+	"asset": null, // optional, null for bytes, if not preset - returns values for all assets 
+	"from": 448531, // hour number since unix epoch
+	"to": 457593 // same
+}
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"from": 448531,"to":457600}' \
+  http://localhost:8080/api/v1/total/tvl
+*/
+apiRouter.post('/total/tvl', async ctx => {
+	let req = ctx.request.body;
+	const asset = "asset" in req ? getAssetID(req.asset) : false;
+	let sql = `SELECT
+		hour AS period,
+		${asset !== false ? 'SUM(balance) AS balance,' : ''}
+		SUM(usd_balance) AS usd_balance
+		FROM aa_balances_hourly
+		WHERE "hour" BETWEEN ? AND ?
+		${asset !== false ? 'AND asset IS ?' : ''}
+		GROUP BY period`;
+	const rows = await db.query(sql, [+req.from, +req.to, ...(asset !== false ? [asset] : [])]);
+	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
+});
+
+/* POST /total/activity => total activity in terms of usd_amount_in / usd_amount_out / num of txs / over time
+req body: {
+	"timeframe": "hourly", // or "daily"
+	"asset": null, // optional, null for bytes, if not preset - returns values for all assets 
+	"from": 448531, // hour or day number since unix epoch
+	"to": 457593 // same
+}
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"from": 448531,"to":457600}' \
+  http://localhost:8080/api/v1/total/activity
+*/
+apiRouter.post('/total/activity', async ctx => {
+	let req = ctx.request.body;
+	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
+	const period = timeframe === "daily" ? "day" : "hour";
+	const asset = "asset" in req ? getAssetID(req.asset) : false;
+	let sql = `SELECT
+		${timeframe == "hourly" ? "hour" : "day"} AS period,
+		${asset !== false ? 'SUM(amount_in) AS amount_in,' : ''}
+		${asset !== false ? 'SUM(amount_out) AS amount_out,' : ''}
+		SUM(usd_amount_in) AS usd_amount_in,
+		SUM(usd_amount_out) AS usd_amount_out,
+		SUM(triggers_count) AS triggers_count,
+		SUM(bounced_count) AS bounced_count,
+		SUM(num_users) AS num_users
+		FROM aa_stats_${timeframe}
+		WHERE ${period} BETWEEN ? AND ?
+		${asset !== false ? 'AND asset IS ?' : ''}
+		GROUP BY ${period}`;
+	const rows = await db.query(sql, [+req.from, +req.to, ...(asset !== false ? [asset] : [])]);
+	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
+});
+
 /* POST /top/aa/tvl => Top AAs by TVL
 req body: {
 	"asset": null, // optional, null for bytes, if not preset - return top TVL in USD
@@ -123,7 +183,7 @@ apiRouter.post('/top/aa/tvl', async ctx => {
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
 
-/* POST /top/aa/(amount_in|amount_out|triggers_count|num_users) => Top AAs by amount_in / amount_out / num of txs / num of users
+/* POST /top/aa/(amount_in|amount_out|triggers_count|num_users) => Top AAs by usd_amount_in / usd_amount_out / num of txs / num of users
 req body: {
 	"timeframe": "hourly", // or "daily"
 	"limit": "50", // top-N, default = 50
@@ -150,19 +210,17 @@ apiRouter.post('/top/aa/:type', async ctx => {
 	let sql = `SELECT
 		${timeframe == "hourly" ? "hour" : "day"} AS period,
 		aa_address AS address,
-		SUM(amount_in) AS amount_in,
-		SUM(amount_out) AS amount_out,
+		${asset !== false ? 'SUM(amount_in) AS amount_in,' : ''}
+		${asset !== false ? 'SUM(amount_out) AS amount_out,' : ''}
 		SUM(usd_amount_in) AS usd_amount_in,
 		SUM(usd_amount_out) AS usd_amount_out,
 		SUM(triggers_count) AS triggers_count,
 		SUM(bounced_count) AS bounced_count,
 		SUM(num_users) AS num_users
 		FROM aa_stats_${timeframe}
-		WHERE period BETWEEN ? AND ?`;
-	if (asset !== false) {
-		sql += ` AND asset IS ?`;
-	}
-	sql += ` GROUP BY address ORDER BY ${type} DESC LIMIT ${limit}`
+		WHERE period BETWEEN ? AND ?
+		${asset !== false ? 'AND asset IS ?' : ''}
+		GROUP BY address ORDER BY ${type} DESC LIMIT ${limit}`
 	const rows = await db.query(sql, [from, to, ...(asset !== false ? [asset] : [])]);
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
