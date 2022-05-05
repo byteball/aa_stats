@@ -14,7 +14,7 @@ async function createTables() {
 
 	const columns = `
 		period_start_date TIMESTAMP NOT NULL,
-		aa_address CHAR(32) NOT NULL,
+		address CHAR(32) NOT NULL,
 		asset CHAR(44) NULL,
 		amount_in INT NOT NULL DEFAULT 0,
 		amount_out INT NOT NULL DEFAULT 0,
@@ -29,7 +29,7 @@ async function createTables() {
 		CREATE TABLE IF NOT EXISTS aa_stats_hourly (
 			hour INT NOT NULL,
 			${columns},
-			UNIQUE (hour, aa_address, asset)
+			UNIQUE (hour, address, asset)
 		)`
 	);
 	await db.query(`CREATE INDEX IF NOT EXISTS aaStatsByHour ON aa_stats_hourly(hour)`);
@@ -38,7 +38,7 @@ async function createTables() {
 		CREATE TABLE IF NOT EXISTS aa_stats_daily (
 			day INT NOT NULL,
 			${columns},
-			UNIQUE (day, aa_address, asset)
+			UNIQUE (day, address, asset)
 		)`
 	);
 	await db.query(`CREATE INDEX IF NOT EXISTS aaStatsByDay ON aa_stats_daily(day)`);

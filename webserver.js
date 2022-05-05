@@ -36,7 +36,7 @@ apiRouter.post('/address', async ctx => {
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	let sql = `SELECT
 		${timeframe == "hourly" ? "hour" : "day"} AS period,
-		aa_address AS address,
+		address,
 		asset,
 		amount_in,
 		amount_out,
@@ -46,7 +46,7 @@ apiRouter.post('/address', async ctx => {
 		bounced_count,
 		num_users
 		FROM aa_stats_${timeframe}
-		WHERE aa_address=?
+		WHERE address=?
 		AND period BETWEEN ? AND ?`;
 	if (asset !== false) {
 		sql += ` AND asset IS ?`;
@@ -209,7 +209,7 @@ apiRouter.post('/top/aa/:type', async ctx => {
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	let sql = `SELECT
 		${timeframe == "hourly" ? "hour" : "day"} AS period,
-		aa_address AS address,
+		address,
 		${asset !== false ? 'SUM(amount_in) AS amount_in,' : ''}
 		${asset !== false ? 'SUM(amount_out) AS amount_out,' : ''}
 		SUM(usd_amount_in) AS usd_amount_in,

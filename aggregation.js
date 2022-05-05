@@ -111,7 +111,7 @@ async function aggregatePeriod(timeframe) {
 					INSERT INTO ${tableName} (
 						${periodColumnName},
 						period_start_date,
-						aa_address,
+						address,
 						asset,
 						amount_in,
 						amount_out,
