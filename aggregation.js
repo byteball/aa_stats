@@ -57,7 +57,7 @@ async function aggregatePeriod(timeframe) {
 			COUNT(DISTINCT trigger_address) AS num_users
 		FROM aa_responses
 		JOIN units ON aa_responses.trigger_unit=units.unit
-		JOIN outputs AS total_outputs ON total_outputs.unit=aa_responses.response_unit
+		JOIN outputs AS total_outputs ON total_outputs.unit=aa_responses.response_unit AND total_outputs.address!=aa_address
 		WHERE aa_response_id > ?
 		GROUP BY units.timestamp / 60 / ?, aa_address, total_outputs.asset
 		ORDER BY period ASC`, [timeframe, lastResponseId, timeframe]);
