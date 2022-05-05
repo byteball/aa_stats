@@ -160,7 +160,7 @@ apiRouter.post('/top/aa/:type', async ctx => {
 	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
 });
 
-/* POST /top/asset/market_cap => Top assets by market cap
+/* POST /top/asset/tvl => Top assets by market cap
 req body: {
 	"limit": "50", // top-N, default = 50
 	"period": 457673 // hour in unix timestamp format, if omitted - returns last hour
@@ -168,9 +168,9 @@ req body: {
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{}' \
-  http://localhost:8080/api/v1/top/asset/market_cap
+  http://localhost:8080/api/v1/top/asset/tvl
 */
-apiRouter.post('/top/asset/market_cap', async ctx => {
+apiRouter.post('/top/asset/tvl', async ctx => {
 	let req = ctx.request.body;
 	const hour = "period" in req ? req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	const limit = req.limit|0 || 50;
