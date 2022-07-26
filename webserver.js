@@ -42,8 +42,8 @@ curl --header "Content-Type: application/json" \
   --data '{"address":"IFFGFP32MYAQZCBXNGCO3ARF3AM6VTNA","timeframe":"hourly","from": 448531,"to":457600}' \
   http://localhost:8080/api/v1/address
 */
-apiRouter.post('/address', async ctx => {
-	let req = ctx.request.body;
+apiRouter.all('/address', async ctx => {
+	let req = ctx.request.body || ctx.query;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	let sql = `SELECT
@@ -80,8 +80,8 @@ curl --header "Content-Type: application/json" \
   --data '{"address":"IFFGFP32MYAQZCBXNGCO3ARF3AM6VTNA","from": 448531,"to":457600}' \
   http://localhost:8080/api/v1/address/tvl
 */
-apiRouter.post('/address/tvl', async ctx => {
-	let req = ctx.request.body;
+apiRouter.all('/address/tvl', async ctx => {
+	let req = ctx.request.body || ctx.query;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	let sql = `SELECT
 		hour AS period,
@@ -111,8 +111,8 @@ curl --header "Content-Type: application/json" \
   --data '{"from": 448531,"to":457600}' \
   http://localhost:8080/api/v1/total/tvl
 */
-apiRouter.post('/total/tvl', async ctx => {
-	let req = ctx.request.body;
+apiRouter.all('/total/tvl', async ctx => {
+	let req = ctx.request.body || ctx.query;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	let sql = `SELECT
 		hour AS period,
@@ -138,8 +138,8 @@ curl --header "Content-Type: application/json" \
   --data '{"from": 448531,"to":457600}' \
   http://localhost:8080/api/v1/total/activity
 */
-apiRouter.post('/total/activity', async ctx => {
-	let req = ctx.request.body;
+apiRouter.all('/total/activity', async ctx => {
+	let req = ctx.request.body || ctx.query;
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	const period = timeframe === "daily" ? "day" : "hour";
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
@@ -170,8 +170,8 @@ curl --header "Content-Type: application/json" \
   --data '{}' \
   http://localhost:8080/api/v1/top/aa/tvl
 */
-apiRouter.post('/top/aa/tvl', async ctx => {
-	let req = ctx.request.body;
+apiRouter.all('/top/aa/tvl', async ctx => {
+	let req = ctx.request.body || ctx.query;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	const hour = "period" in req ? req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	let sql = (asset !== false)
@@ -208,11 +208,11 @@ curl --header "Content-Type: application/json" \
   --data '{"asset": null, "timeframe": "hourly"}' \
   http://localhost:8080/api/v1/top/aa/amount_in
 */
-apiRouter.post('/top/aa/:type', async ctx => {
+apiRouter.all('/top/aa/:type', async ctx => {
 	let type = ctx.params['type'];
 	if (!["usd_amount_in", "usd_amount_out", "triggers_count", "num_users"].includes(type))
 		ctx.throw(404, 'type is incorrect');
-	let req = ctx.request.body;
+	let req = ctx.request.body || ctx.query;
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	const period = timeframe === "daily" ? "day" : "hour";
 	const period_length = timeframe === "daily" ? 1000 * 3600 * 24 : 1000 * 3600;
@@ -247,8 +247,8 @@ curl --header "Content-Type: application/json" \
   --data '{}' \
   http://localhost:8080/api/v1/top/asset/tvl
 */
-apiRouter.post('/top/asset/tvl', async ctx => {
-	let req = ctx.request.body;
+apiRouter.all('/top/asset/tvl', async ctx => {
+	let req = ctx.request.body || ctx.query;
 	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	const limit = req.limit|0 || 50;
 	let sql = `SELECT
@@ -274,9 +274,9 @@ curl --header "Content-Type: application/json" \
   --data '{}' \
   http://localhost:8080/api/v1/top/asset/amount_in
 */
-apiRouter.post('/top/asset/amount_in', async ctx => {
+apiRouter.all('/top/asset/amount_in', async ctx => {
 	let type = ctx.params['type'];
-	let req = ctx.request.body;
+	let req = ctx.request.body || ctx.query;
 	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	const limit = req.limit|0 || 50;
 	let sql = `SELECT
