@@ -10,11 +10,12 @@ const { getAssetID, getAssetName, assetsMetadata } = require('./assets');
 
 function enrichData(rows, asset) {
 	for (let r of rows) {
-		const a = r.asset !== undefined ? r.asset : asset;
-		if (a !== null && typeof a !== 'string')
-			throw Error(`bad asset ${a}, ${asset}`);
-		if (asset !== false)
+		if (asset !== false || r.asset || r.asset === null) {
+			const a = r.asset !== undefined ? r.asset : asset;
+			if (a !== null && typeof a !== 'string')
+				throw Error(`bad asset ${a}, ${asset}`);
 			r.decimals = a ? assetsMetadata[a].decimals : 9;
+		}
 		if (r.asset)
 			r.asset = getAssetName(r.asset);
 	}
