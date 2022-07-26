@@ -6,8 +6,20 @@ const mount = require('koa-mount');
 
 const conf = require('ocore/conf.js');
 const db = require('ocore/db.js');
-const { getAssetID, getAssetName } = require('./assets');
+const { getAssetID, getAssetName, assetsMetadata } = require('./assets');
 
+function enrichData(rows, asset) {
+	for (let r of rows) {
+		const a = r.asset !== undefined ? r.asset : asset;
+		if (a !== null && typeof a !== 'string')
+			throw Error(`bad asset ${a}, ${asset}`);
+		if (asset !== false)
+			r.decimals = a ? assetsMetadata[a].decimals : 9;
+		if (r.asset)
+			r.asset = getAssetName(r.asset);
+	}
+	return rows;
+}
 
 const app = new Koa();
 app.use(cors());
@@ -53,7 +65,7 @@ apiRouter.post('/address', async ctx => {
 	}
 	sql += ` ORDER BY period ASC`;
 	const rows = await db.query(sql, [req.address, +req.from, +req.to, ...(asset !== false ? [asset] : [])]);
-	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});
+	ctx.body = enrichData(rows, asset);
 });
 
 /* POST /address/tvl => TVL over time for one AA address
@@ -85,7 +97,7 @@ apiRouter.post('/address/tvl', async ctx => {
 	}
 	sql += ` ORDER BY period ASC`;
 	const rows = await db.query(sql, [req.address, +req.from, +req.to, ...(asset !== false ? [asset] : [])]);
-	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
+	ctx.body = enrichData(rows, asset);
 });
 
 /* POST /total/tvl => total TVL over time
@@ -111,7 +123,7 @@ apiRouter.post('/total/tvl', async ctx => {
 		${asset !== false ? 'AND asset IS ?' : ''}
 		GROUP BY period`;
 	const rows = await db.query(sql, [+req.from, +req.to, ...(asset !== false ? [asset] : [])]);
-	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
+	ctx.body = enrichData(rows, asset);
 });
 
 /* POST /total/activity => total activity in terms of usd_amount_in / usd_amount_out / num of txs / over time
@@ -145,7 +157,7 @@ apiRouter.post('/total/activity', async ctx => {
 		${asset !== false ? 'AND asset IS ?' : ''}
 		GROUP BY ${period}`;
 	const rows = await db.query(sql, [+req.from, +req.to, ...(asset !== false ? [asset] : [])]);
-	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
+	ctx.body = enrichData(rows, asset);
 });
 
 /* POST /top/aa/tvl => Top AAs by TVL
@@ -180,7 +192,7 @@ apiRouter.post('/top/aa/tvl', async ctx => {
 			GROUP BY address
 			ORDER BY usd_balance DESC`;
 	const rows = await db.query(sql, [hour, ...(asset !== false ? [asset] : [])]);
-	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
+	ctx.body = enrichData(rows, asset);
 });
 
 /* POST /top/aa/(amount_in|amount_out|triggers_count|num_users) => Top AAs by usd_amount_in / usd_amount_out / num of txs / num of users
@@ -222,7 +234,7 @@ apiRouter.post('/top/aa/:type', async ctx => {
 		${asset !== false ? 'AND asset IS ?' : ''}
 		GROUP BY address ORDER BY ${type} DESC LIMIT ${limit}`
 	const rows = await db.query(sql, [from, to, ...(asset !== false ? [asset] : [])]);
-	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
+	ctx.body = enrichData(rows, asset);
 });
 
 /* POST /top/asset/tvl => Top assets by TVL
@@ -249,7 +261,7 @@ apiRouter.post('/top/asset/tvl', async ctx => {
 		GROUP BY asset
 		ORDER BY total_usd_balance DESC LIMIT ${limit}`;
 	const rows = await db.query(sql, [hour]);
-	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
+	ctx.body = enrichData(rows, true);
 });
 
 /* POST /top/asset/volume => Top assets by volume (amount_in)
@@ -277,7 +289,7 @@ apiRouter.post('/top/asset/amount_in', async ctx => {
 		GROUP BY asset
 		ORDER BY total_usd_amount_in DESC LIMIT ${limit}`;
 	const rows = await db.query(sql, [hour]);
-	ctx.body = rows.map(r => {r.asset = getAssetName(r.asset); return r;});;
+	ctx.body = enrichData(rows, true);
 });
 
 app.use(mount('/api/v1', apiRouter.routes()));
