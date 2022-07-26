@@ -12,9 +12,12 @@ function enrichData(rows, asset) {
 	for (let r of rows) {
 		if (asset !== false || r.asset || r.asset === null) {
 			const a = r.asset !== undefined ? r.asset : asset;
-			if (a !== null && typeof a !== 'string')
+			if (a === null)
+				r.decimals = 9;
+			else if (typeof a === 'string')
+				r.decimals = assetsMetadata[a] ? assetsMetadata[a].decimals : null;
+			else
 				throw Error(`bad asset ${a}, ${asset}`);
-			r.decimals = a ? assetsMetadata[a].decimals : 9;
 		}
 		if (r.asset)
 			r.asset = getAssetName(r.asset);
