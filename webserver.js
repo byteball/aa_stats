@@ -300,6 +300,10 @@ apiRouter.all('/top/asset/amount_in', async ctx => {
 	ctx.body = enrichData(rows, true);
 });
 
+apiRouter.all('/assets', async ctx => {
+	ctx.body = assetsMetadata;
+});
+
 app.use(mount('/api/v1', apiRouter.routes()));
 
 
