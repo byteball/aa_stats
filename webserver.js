@@ -6,7 +6,7 @@ const mount = require('koa-mount');
 
 const conf = require('ocore/conf.js');
 const db = require('ocore/db.js');
-const { getAssetID, getAssetName, assetsMetadata } = require('./assets');
+const { getAssetID, assetsMetadata } = require('./assets');
 
 function enrichData(rows, asset) {
 	for (let r of rows) {
@@ -19,8 +19,12 @@ function enrichData(rows, asset) {
 			else
 				throw Error(`bad asset ${a}, ${asset}`);
 		}
-		if (r.asset)
-			r.asset = getAssetName(r.asset);
+		if (r.asset || r.asset === null) {
+			if (r.asset === null)
+				r.symbol = 'GBYTE';
+			else if (assetsMetadata[r.asset])
+				r.symbol = assetsMetadata[r.asset].name;
+		}
 	}
 	return rows;
 }
