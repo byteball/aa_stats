@@ -51,7 +51,9 @@ curl --header "Content-Type: application/json" \
   http://localhost:8080/api/v1/address
 */
 apiRouter.all('/address', async ctx => {
-	let req = ctx.request.body || ctx.query;
+	let req = ctx.request.body;
+	if (!req || Object.keys(req).length === 0)
+		req = ctx.query;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	let sql = `SELECT
@@ -89,7 +91,9 @@ curl --header "Content-Type: application/json" \
   http://localhost:8080/api/v1/address/tvl
 */
 apiRouter.all('/address/tvl', async ctx => {
-	let req = ctx.request.body || ctx.query;
+	let req = ctx.request.body;
+	if (!req || Object.keys(req).length === 0)
+		req = ctx.query;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	let sql = `SELECT
 		hour AS period,
@@ -120,7 +124,9 @@ curl --header "Content-Type: application/json" \
   http://localhost:8080/api/v1/total/tvl
 */
 apiRouter.all('/total/tvl', async ctx => {
-	let req = ctx.request.body || ctx.query;
+	let req = ctx.request.body;
+	if (!req || Object.keys(req).length === 0)
+		req = ctx.query;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	let sql = `SELECT
 		hour AS period,
@@ -147,7 +153,9 @@ curl --header "Content-Type: application/json" \
   http://localhost:8080/api/v1/total/activity
 */
 apiRouter.all('/total/activity', async ctx => {
-	let req = ctx.request.body || ctx.query;
+	let req = ctx.request.body;
+	if (!req || Object.keys(req).length === 0)
+		req = ctx.query;
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	const period = timeframe === "daily" ? "day" : "hour";
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
@@ -179,7 +187,9 @@ curl --header "Content-Type: application/json" \
   http://localhost:8080/api/v1/top/aa/tvl
 */
 apiRouter.all('/top/aa/tvl', async ctx => {
-	let req = ctx.request.body || ctx.query;
+	let req = ctx.request.body;
+	if (!req || Object.keys(req).length === 0)
+		req = ctx.query;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	const hour = "period" in req ? req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	let sql = (asset !== false)
@@ -208,7 +218,9 @@ apiRouter.all('/top/aa/combined/:type', async ctx => {
 	let type = ctx.params['type'];
 	if (!["usd_amount_in", "usd_amount_out", "triggers_count", "num_users", "usd_balance"].includes(type))
 		ctx.throw(404, 'type is incorrect');
-	let req = ctx.request.body || ctx.query;
+	let req = ctx.request.body;
+	if (!req || Object.keys(req).length === 0)
+		req = ctx.query;
 
 	// activity
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
@@ -273,7 +285,9 @@ apiRouter.all('/top/aa/:type', async ctx => {
 	let type = ctx.params['type'];
 	if (!["usd_amount_in", "usd_amount_out", "triggers_count", "num_users"].includes(type))
 		ctx.throw(404, 'type is incorrect');
-	let req = ctx.request.body || ctx.query;
+	let req = ctx.request.body;
+	if (!req || Object.keys(req).length === 0)
+		req = ctx.query;
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	const period = timeframe === "daily" ? "day" : "hour";
 	const period_length = timeframe === "daily" ? 1000 * 3600 * 24 : 1000 * 3600;
@@ -309,7 +323,9 @@ curl --header "Content-Type: application/json" \
   http://localhost:8080/api/v1/top/asset/tvl
 */
 apiRouter.all('/top/asset/tvl', async ctx => {
-	let req = ctx.request.body || ctx.query;
+	let req = ctx.request.body;
+	if (!req || Object.keys(req).length === 0)
+		req = ctx.query;
 	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	const limit = req.limit|0 || 50;
 	let sql = `SELECT
@@ -337,7 +353,9 @@ curl --header "Content-Type: application/json" \
 */
 apiRouter.all('/top/asset/amount_in', async ctx => {
 	let type = ctx.params['type'];
-	let req = ctx.request.body || ctx.query;
+	let req = ctx.request.body;
+	if (!req || Object.keys(req).length === 0)
+		req = ctx.query;
 	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	const limit = req.limit|0 || 50;
 	let sql = `SELECT
