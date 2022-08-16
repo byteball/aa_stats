@@ -203,6 +203,60 @@ apiRouter.all('/top/aa/tvl', async ctx => {
 	ctx.body = enrichData(rows, asset);
 });
 
+
+apiRouter.all('/top/aa/combined/:type', async ctx => {
+	let type = ctx.params['type'];
+	if (!["usd_amount_in", "usd_amount_out", "triggers_count", "num_users", "usd_balance"].includes(type))
+		ctx.throw(404, 'type is incorrect');
+	let req = ctx.request.body || ctx.query;
+
+	// activity
+	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
+	const period = timeframe === "daily" ? "day" : "hour";
+	const period_length = timeframe === "daily" ? 1000 * 3600 * 24 : 1000 * 3600;
+	const from = typeof req.from === 'number' ? req.from : Math.floor(Date.now() / period_length) - 1;
+	const to = typeof req.to === 'number' ? req.to : Math.floor(Date.now() / period_length) - 1;
+	const activity_sql = `SELECT
+		address,
+		SUM(usd_amount_in) AS usd_amount_in,
+		SUM(usd_amount_out) AS usd_amount_out,
+		SUM(triggers_count) AS triggers_count,
+		SUM(bounced_count) AS bounced_count,
+		SUM(num_users) AS num_users
+		FROM aa_stats_${timeframe}
+		WHERE ${period} BETWEEN ? AND ?
+		GROUP BY address`
+	const activity_rows = await db.query(activity_sql, [from, to]);
+	const activeAddresses = {};
+	for (let { address } of activity_rows)
+		activeAddresses[address] = true;
+
+	// tvl
+	const hour = "period" in req ? req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
+	const tvl_sql = `SELECT
+		address,
+		SUM(usd_balance) AS usd_balance
+		FROM aa_balances_hourly
+		WHERE period=?
+		GROUP BY address
+		ORDER BY usd_balance DESC`;
+	const tvl_rows = await db.query(tvl_sql, [hour]);
+	const tvlsByAddress = {};
+	for (let { address, usd_balance } of tvl_rows)
+		tvlsByAddress[address] = usd_balance;
+	
+	// combined rows
+	const rows = activity_rows;
+	for (let row of rows)
+		row.usd_balance = tvlsByAddress[row.address] || 0;
+	for (let row of tvl_rows)
+		if (!activeAddresses[row.address])
+			rows.push({ ...row, usd_amount_in: 0, usd_amount_out: 0, triggers_count: 0, bounced_count: 0, num_users: 0 });
+	rows.sort((r1, r2) => r2[type] - r1[type]);
+	ctx.body = rows;
+});
+
+
 /* POST /top/aa/(amount_in|amount_out|triggers_count|num_users) => Top AAs by usd_amount_in / usd_amount_out / num of txs / num of users
 req body: {
 	"timeframe": "hourly", // or "daily"
