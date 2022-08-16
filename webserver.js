@@ -263,7 +263,8 @@ apiRouter.all('/top/aa/combined/:type', async ctx => {
 	for (let row of tvl_rows)
 		if (!activeAddresses[row.address])
 			rows.push({ ...row, usd_amount_in: 0, usd_amount_out: 0, triggers_count: 0, bounced_count: 0, num_users: 0 });
-	rows.sort((r1, r2) => r2[type] - r1[type]);
+	const secondary_type = type === 'usd_balance' ? 'usd_amount_in' : 'usd_balance';
+	rows.sort((r1, r2) => r2[type] || r1[type] ? r2[type] - r1[type] : r2[secondary_type] - r1[secondary_type]);
 	ctx.body = rows;
 });
 
