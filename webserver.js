@@ -237,9 +237,8 @@ apiRouter.all('/top/aa/combined/:type', async ctx => {
 		address,
 		SUM(usd_balance) AS usd_balance
 		FROM aa_balances_hourly
-		WHERE period=?
-		GROUP BY address
-		ORDER BY usd_balance DESC`;
+		WHERE hour=?
+		GROUP BY address`;
 	const tvl_rows = await db.query(tvl_sql, [hour]);
 	const tvlsByAddress = {};
 	for (let { address, usd_balance } of tvl_rows)
