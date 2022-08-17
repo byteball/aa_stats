@@ -236,7 +236,7 @@ apiRouter.all('/top/aa/combined/:type', async ctx => {
 		SUM(bounced_count) AS bounced_count,
 		SUM(num_users) AS num_users
 		FROM aa_stats_${timeframe}
-		WHERE ${period} BETWEEN ? AND ?
+		WHERE ${period} BETWEEN ? AND ? AND (usd_amount_in>0 OR usd_amount_out>0)
 		GROUP BY address`
 	const activity_rows = await db.query(activity_sql, [from, to]);
 	const activeAddresses = {};
@@ -249,7 +249,7 @@ apiRouter.all('/top/aa/combined/:type', async ctx => {
 		address,
 		SUM(usd_balance) AS usd_balance
 		FROM aa_balances_hourly
-		WHERE hour=?
+		WHERE hour=? AND usd_balance>0
 		GROUP BY address`;
 	const tvl_rows = await db.query(tvl_sql, [hour]);
 	const tvlsByAddress = {};
