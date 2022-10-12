@@ -14,7 +14,7 @@ async function start() {
 	await aggregatePeriod(60);
 	setInterval(() => {aggregatePeriod(60)}, 1000 * 60);
 	await aggregatePeriod(60 * 24);
-	setInterval(() => {aggregatePeriod(60 * 24)}, 1000 * 60 * 10 + 30 * 1000); // offset by 30 seconds to not interfier with hourly queries
+	setInterval(() => {aggregatePeriod(60 * 24)}, 1000 * 60 * 10 + 30 * 1000); // offset by 30 seconds to not interfere with hourly queries
 	await snapshotBalances();
 	(new CronJob('1 * * * * *', snapshotBalances)).start();
 }
@@ -156,6 +156,8 @@ async function snapshotBalances() {
 	console.log('starting snapshotting of balances', currentHour, lastHour);
 	const conn = await db.takeConnectionFromPool();
 	await conn.query(`BEGIN`);
+	if (Object.keys(assetsMetadata).length === 0)
+		throw Error(`no asset metadata yet`);
 	const rows = await conn.query(`SELECT address, asset, balance FROM aa_balances`);
 	for (const row of rows) {
 		row.asset = row.asset === "base" ? null : row.asset;
