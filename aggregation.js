@@ -11,6 +11,7 @@ let aggregationInProgress = {};
 
 async function start() {
 	console.log('Starting aggregation');
+	await updateAssetMetadata();
 	await aggregatePeriod(60);
 	setInterval(() => {aggregatePeriod(60)}, 1000 * 60);
 	await aggregatePeriod(60 * 24);
@@ -83,15 +84,7 @@ async function aggregatePeriod(timeframe) {
 	// request missing asset infos
 
 	let assets = [...new Set(rows.map(r => r.asset))].filter(a => !assetsMetadata.hasOwnProperty(a) && a != null);
-	const aMs = await new Promise((resolve, reject) => {
-		let aMs;
-		wallet.readAssetMetadata(assets, (ams) => {
-			aMs = ams;
-		}, () => {
-			resolve(aMs);
-		});
-	});
-	Object.assign(assetsMetadata, aMs);
+	await updateAssetMetadata(assets);
 
 	// aggregate
 
@@ -173,6 +166,18 @@ async function snapshotBalances() {
 	await conn.query(`COMMIT`);
 	conn.release();
 	console.log(`Snapshot of aa_balances done, hour: ${currentHour}`);
+}
+
+async function updateAssetMetadata(assets) {
+	const aMs = await new Promise((resolve, reject) => {
+		let aMs;
+		wallet.readAssetMetadata(assets, (ams) => {
+			aMs = ams;
+		}, () => {
+			resolve(aMs);
+		});
+	});
+	Object.assign(assetsMetadata, aMs);
 }
 
 function getUSDAmount(asset, amount) {
