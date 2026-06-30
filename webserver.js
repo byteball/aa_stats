@@ -191,7 +191,7 @@ apiRouter.all('/top/aa/tvl', async ctx => {
 	if (!req || Object.keys(req).length === 0)
 		req = ctx.query;
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
-	const hour = "period" in req ? req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
+	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	let sql = (asset !== false)
 		? `SELECT
 			hour AS period,
@@ -226,8 +226,8 @@ apiRouter.all('/top/aa/combined/:type', async ctx => {
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	const period = timeframe === "daily" ? "day" : "hour";
 	const period_length = timeframe === "daily" ? 1000 * 3600 * 24 : 1000 * 3600;
-	const from = typeof req.from === 'number' ? req.from : Math.floor(Date.now() / period_length) - 1;
-	const to = typeof req.to === 'number' ? req.to : Math.floor(Date.now() / period_length) - 1;
+	const from = req.from !== undefined ? +req.from : Math.floor(Date.now() / period_length) - 1;
+	const to = req.to !== undefined ? +req.to : Math.floor(Date.now() / period_length) - 1;
 	const activity_sql = `SELECT
 		address,
 		SUM(usd_amount_in) AS usd_amount_in,
@@ -244,7 +244,7 @@ apiRouter.all('/top/aa/combined/:type', async ctx => {
 		activeAddresses[address] = true;
 
 	// tvl
-	const hour = "period" in req ? req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
+	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
 	const tvl_sql = `SELECT
 		address,
 		SUM(usd_balance) AS usd_balance
@@ -267,7 +267,7 @@ apiRouter.all('/top/aa/combined/:type', async ctx => {
 	const secondary_type = type === 'usd_balance' ? 'usd_amount_in' : 'usd_balance';
 	rows.sort((r1, r2) => r2[type] || r1[type] ? r2[type] - r1[type] : r2[secondary_type] - r1[secondary_type]);
 	if (req.limit) {
-		const limit = req.limit | 0;
+		const limit = Math.min(req.limit | 0 || 50, 1000);
 		if (rows.length > limit)
 			rows.length = limit;
 	}
@@ -299,9 +299,9 @@ apiRouter.all('/top/aa/:type', async ctx => {
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	const period = timeframe === "daily" ? "day" : "hour";
 	const period_length = timeframe === "daily" ? 1000 * 3600 * 24 : 1000 * 3600;
-	const from = typeof req.from === 'number' ? req.from : Math.floor(Date.now() / period_length) - 1;
-	const to = typeof req.to === 'number' ? req.to : Math.floor(Date.now() / period_length) - 1;
-	const limit = req.limit|0 || 50;
+	const from = req.from !== undefined ? +req.from : Math.floor(Date.now() / period_length) - 1;
+	const to = req.to !== undefined ? +req.to : Math.floor(Date.now() / period_length) - 1;
+	const limit = Math.min(req.limit|0 || 50, 1000);
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	let sql = `SELECT
 		address,
@@ -335,7 +335,7 @@ apiRouter.all('/top/asset/tvl', async ctx => {
 	if (!req || Object.keys(req).length === 0)
 		req = ctx.query;
 	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
-	const limit = req.limit|0 || 50;
+	const limit = Math.min(req.limit|0 || 50, 1000);
 	let sql = `SELECT
 			hour AS period,
 			asset,
@@ -365,7 +365,7 @@ apiRouter.all('/top/asset/amount_in', async ctx => {
 	if (!req || Object.keys(req).length === 0)
 		req = ctx.query;
 	const hour = "period" in req ? +req.period : Math.floor(Date.now() / 1000 / 60 / 60)-1;
-	const limit = req.limit|0 || 50;
+	const limit = Math.min(req.limit|0 || 50, 1000);
 	let sql = `SELECT
 			hour AS period,
 			asset,
