@@ -54,6 +54,8 @@ apiRouter.all('/address', async ctx => {
 	let req = ctx.request.body;
 	if (!req || Object.keys(req).length === 0)
 		req = ctx.query;
+	if (typeof req.address !== 'string')
+		ctx.throw(400, 'address must be a single string');
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	const timeframe = req.timeframe === "daily" ? "daily" : "hourly";
 	let sql = `SELECT
@@ -94,6 +96,8 @@ apiRouter.all('/address/tvl', async ctx => {
 	let req = ctx.request.body;
 	if (!req || Object.keys(req).length === 0)
 		req = ctx.query;
+	if (typeof req.address !== 'string')
+		ctx.throw(400, 'address must be a single string');
 	const asset = "asset" in req ? getAssetID(req.asset) : false;
 	let sql = `SELECT
 		hour AS period,
